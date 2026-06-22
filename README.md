@@ -5,6 +5,11 @@ An AI-powered resume analyzer that checks resume quality, ATS compatibility, key
 
 ## Dashboard Preview
 AI Resume Analyzer dashboard showing resume score, ATS score, strengths, weaknesses, and suggestions.
+![Home Page](home-page.png)
+
+![Resume Preview](resume-preview.png)
+
+![Dashboard](dashboard.png)
 
 ## Features
 - Resume upload and analysis
