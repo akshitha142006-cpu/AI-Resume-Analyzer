@@ -29,7 +29,7 @@ AI Resume Analyzer dashboard showing resume score, ATS score, strengths, weaknes
 - index.html
 
 ## Project Link
-(Add GitHub Pages link here)
+https://akshitha142006-cpu.github.io/AI-Resume-Analyzer/
 
 ## Author
 Akshitha
