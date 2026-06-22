@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Resume Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ============================================================
+       RESET & TOKENS
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080b12;
+      --bg2:      #0d1120;
+      --bg3:      #131929;
+      --card:     #111827;
+      --card2:    #161d2e;
+      --border:   #1e2740;
+      --border2:  #263050;
+      --text:     #e2e8f8;
+      --text2:    #94a3c0;
+      --text3:    #5a6990;
+      --accent:   #6366f1;
+      --accent2:  #818cf8;
+      --teal:     #2dd4bf;
+      --green:    #22d3a0;
+      --red:      #f43f5e;
+      --yellow:   #fbbf24;
+      --purple:   #a78bfa;
+      --r:        16px;
+      --r-sm:     10px;
+      --r-lg:     20px;
+      --shadow:   0 4px 24px rgba(0,0,0,0.4);
+      --shadow-lg:0 8px 48px rgba(0,0,0,0.6);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ============================================================
+       ANIMATED BACKGROUND GRID
+    ============================================================ */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* floating orb accents */
+    body::after {
+      content: '';
+      position: fixed;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%);
+      top: -200px; right: -200px;
+      pointer-events: none;
+      z-index: 0;
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+
+    @keyframes orbFloat {
+      0%,100% { transform: translateY(0px) scale(1); }
+      50%      { transform: translateY(40px) scale(1.05); }
+    }
+
+    /* ============================================================
+       HEADER
+    ============================================================ */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,11,18,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-wrap {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--teal) 100%);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 20px rgba(99,102,241,0.35);
+      flex-shrink: 0;
+    }
+
+    .header-title { font-size: 17px; font-weight: 700; color: var(--text); }
+    .header-sub   { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+    .header-badge {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(34,211,160,0.08);
+      border: 1px solid rgba(34,211,160,0.2);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--green);
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ============================================================
+       MAIN
+    ============================================================ */
+    main {
+      position: relative; z-index: 1;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ============================================================
+       HERO / UPLOAD SECTION
+    ============================================================ */
+    .hero {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 44px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 50%, var(--teal) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--text2);
+      max-width: 480px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+    }
+
+    /* ============================================================
+       UPLOAD CARD
+    ============================================================ */
+    #upload-area {
+      background: var(--card);
+      border: 1.5px dashed var(--border2);
+      border-radius: var(--r-lg);
+      padding: 56px 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.3s, background 0.3s, box-shadow 0.3s, transform 0.2s;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+
+    #upload-area::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    #upload-area:hover, #upload-area.dragover {
+      border-color: var(--accent);
+      background: rgba(99,102,241,0.04);
+      box-shadow: 0 0 40px rgba(99,102,241,0.12), var(--shadow);
+      transform: translateY(-2px);
+    }
+
+    .upload-icon-wrap {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(45,212,191,0.1));
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 24px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 20px;
+      transition: transform 0.3s;
+    }
+
+    #upload-area:hover .upload-icon-wrap { transform: scale(1.08) rotate(-3deg); }
+
+    #upload-area h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    #upload-area .sub {
+      font-size: 14px;
+      color: var(--text2);
+      margin-bottom: 28px;
+    }
+
+    .format-pill {
+      display: inline-block;
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.2);
+      color: var(--yellow);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 2px 8px;
+      margin-left: 6px;
+      vertical-align: middle;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ============================================================
+       BUTTONS
+    ============================================================ */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 22px;
+      border-radius: var(--r-sm);
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.15s;
+    }
+
+    .btn:hover::after   { background: rgba(255,255,255,0.06); }
+    .btn:active         { transform: scale(0.97); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 24px rgba(99,102,241,0.5); transform: translateY(-1px); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.05);
+      color: var(--text2);
+      border: 1px solid var(--border2);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+    .btn-teal {
+      background: rgba(45,212,191,0.1);
+      color: var(--teal);
+      border: 1px solid rgba(45,212,191,0.25);
+    }
+    .btn-teal:hover { background: rgba(45,212,191,0.15); }
+
+    .btn-big {
+      font-size: 16px;
+      padding: 15px 40px;
+      border-radius: var(--r);
+    }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+
+    /* ============================================================
+       PREVIEW
+    ============================================================ */
+    #preview-section {
+      display: none;
+      margin-bottom: 24px;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    .preview-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .preview-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-header svg { flex-shrink: 0; }
+
+    .preview-filename {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .preview-meta {
+      font-size: 11px;
+      color: var(--text3);
+      margin-left: auto;
+    }
+
+    .preview-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text2);
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.8;
+      padding: 18px 20px;
+    }
+
+    /* ============================================================
+       ANALYZE SECTION
+    ============================================================ */
+    #analyze-section {
+      display: none;
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    .analyze-hint {
+      font-size: 13px;
+      color: var(--text3);
+      margin-top: 14px;
+    }
+
+    /* ============================================================
+       LOADING
+    ============================================================ */
+    #loading {
+      display: none;
+      text-align: center;
+      padding: 80px 24px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .loader-ring {
+      width: 60px; height: 60px;
+      margin: 0 auto 28px;
+      position: relative;
+    }
+
+    .loader-ring svg {
+      animation: spin 1.4s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader-ring circle {
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .lr-track { stroke: var(--border2); }
+    .lr-fill  {
+      stroke: url(#loaderGrad);
+      stroke-dasharray: 120;
+      stroke-dashoffset: 30;
+    }
+
+    .loading-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .loading-sub {
+      font-size: 13px;
+      color: var(--text3);
+      min-height: 20px;
+      transition: opacity 0.3s;
+    }
+
+    .loading-dots {
+      display: flex; gap: 6px; justify-content: center;
+      margin-top: 24px;
+    }
+
+    .loading-dots span {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: dotBounce 1.2s ease-in-out infinite;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; background: var(--purple); }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; background: var(--teal); }
+
+    @keyframes dotBounce {
+      0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
+      40%          { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ============================================================
+       RESULTS
+    ============================================================ */
+    #results-section { display: none; }
+
+    /* Section label */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text3);
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ---- SCORE STRIP ---- */
+    .scores-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .score-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 28px 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.4s ease both;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .score-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+    .score-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .score-card.s-resume::before { background: linear-gradient(90deg, var(--accent), var(--purple)); }
+    .score-card.s-ats::before    { background: linear-gradient(90deg, var(--teal), var(--green)); }
+    .score-card.s-verdict::before{ background: linear-gradient(90deg, var(--yellow), var(--teal)); }
+
+    .score-ring-wrap {
+      width: 110px; height: 110px;
+      position: relative;
+      margin: 0 auto 16px;
+    }
+
+    .score-ring-wrap svg { transform: rotate(-90deg); }
+
+    .ring-bg   { fill: none; stroke: var(--border2); stroke-width: 7; }
+    .ring-fill {
+      fill: none;
+      stroke-width: 7;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ring-num {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .ring-grade {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: absolute;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    .score-name {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text3);
+    }
+
+    /* Verdict card */
+    .score-card.s-verdict {
+      text-align: left;
+      padding: 28px 28px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+
+    .verdict-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .verdict-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .verdict-bars { display: flex; flex-direction: column; gap: 10px; }
+
+    .vbar-row { display: flex; align-items: center; gap: 10px; }
+    .vbar-label { font-size: 11px; color: var(--text3); width: 90px; flex-shrink: 0; font-weight: 500; }
+    .vbar-track {
+      flex: 1;
+      height: 5px;
+      background: var(--border2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .vbar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+      width: 0;
+    }
+    .vbar-pct { font-size: 11px; font-weight: 600; width: 32px; text-align: right; flex-shrink: 0; }
+
+    /* ---- RESULTS GRID ---- */
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .result-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 24px;
+      animation: fadeUp 0.4s ease both;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+    .result-card.span-2 { grid-column: 1 / -1; }
+
+    .card-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .card-icon {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .ci-green  { background: rgba(34,211,160,0.12);  border: 1px solid rgba(34,211,160,0.2); }
+    .ci-red    { background: rgba(244,63,94,0.12);   border: 1px solid rgba(244,63,94,0.2); }
+    .ci-purple { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); }
+    .ci-yellow { background: rgba(251,191,36,0.12);  border: 1px solid rgba(251,191,36,0.2); }
+    .ci-blue   { background: rgba(99,102,241,0.12);  border: 1px solid rgba(99,102,241,0.2); }
+
+    .card-header-text h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .card-header-text p {
+      font-size: 11px;
+      color: var(--text3);
+      margin-top: 1px;
+    }
+
+    /* List items */
+    .r-list { list-style: none; }
+
+    .r-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.5;
+      transition: color 0.15s;
+    }
+
+    .r-list li:hover { color: var(--text); }
+    .r-list li:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .li-icon {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .li-green  { background: rgba(34,211,160,0.1); }
+    .li-red    { background: rgba(244,63,94,0.1); }
+    .li-purple { background: rgba(167,139,250,0.1); }
+
+    /* Keyword badges */
+    .badge-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .kbadge {
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      transition: transform 0.15s;
+      cursor: default;
+    }
+    .kbadge:hover { transform: translateY(-2px); }
+
+    .kb-green  { background: rgba(34,211,160,0.1);  color: var(--green);  border: 1px solid rgba(34,211,160,0.2); }
+    .kb-red    { background: rgba(244,63,94,0.1);   color: var(--red);    border: 1px solid rgba(244,63,94,0.2); }
+
+    /* ---- BOTTOM ACTIONS ---- */
+    .actions-row {
+      display: flex; justify-content: center; gap: 12px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+    }
+
+    /* ============================================================
+       SCROLLBAR
+    ============================================================ */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 768px) {
+      header { padding: 0 16px; }
+      main { padding: 32px 16px 60px; }
+      .scores-strip { grid-template-columns: 1fr 1fr; }
+      .score-card.s-verdict { grid-column: 1 / -1; }
+      .results-grid { grid-template-columns: 1fr; }
+      .result-card.span-2 { grid-column: 1; }
+      #upload-area { padding: 40px 20px; }
+    }
+
+    @media (max-width: 480px) {
+      .scores-strip { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SVG defs for loader gradient -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="loaderGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#2dd4bf"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- ============================================================
+     HEADER
+============================================================ -->
+<header>
+  <div class="logo-wrap">🤖</div>
+  <div>
+    <div class="header-title">ResumeAI</div>
+    <div class="header-sub">Resume Analyzer & ATS Checker</div>
+  </div>
+  <div class="header-badge">
+    <div class="badge-dot"></div>
+    Offline · Free · No API
+  </div>
+</header>
+
+<!-- ============================================================
+     MAIN
+============================================================ -->
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">✦ AI-Powered Analysis</div>
+    <h1>Analyze Your Resume<br/>Like a Recruiter Would</h1>
+    <p>Get an instant ATS score, keyword analysis, and actionable feedback — all offline, no sign-up needed.</p>
+  </div>
+
+  <!-- UPLOAD AREA -->
+  <div id="upload-area">
+    <div class="upload-icon-wrap">📄</div>
+    <h2>Drop your resume here</h2>
+    <p class="sub">
+      Drag &amp; Drop or click to browse
+      <span class="format-pill">.txt</span>
+    </p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload Resume
+      </button>
+      <button class="btn btn-ghost" onclick="loadSampleResume()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Try Sample Resume
+      </button>
+    </div>
+    <input type="file" id="file-input" accept=".txt" style="display:none" onchange="handleFileUpload(event)"/>
+  </div>
+
+  <!-- PREVIEW -->
+  <div id="preview-section">
+    <div class="preview-card">
+      <div class="preview-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="preview-filename" id="file-name-label">Resume Preview</span>
+        <span class="preview-meta" id="word-count-label"></span>
+      </div>
+      <div class="preview-text" id="resume-preview-text"></div>
+    </div>
+  </div>
+
+  <!-- ANALYZE -->
+  <div id="analyze-section">
+    <button class="btn btn-primary btn-big" id="analyze-btn" onclick="analyzeResume()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Analyze My Resume
+    </button>
+    <div class="analyze-hint">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Analysis runs locally in your browser · No data is uploaded anywhere
+      &nbsp;·&nbsp;
+      <span onclick="resetAll()" style="cursor:pointer;color:var(--accent2);text-decoration:underline">Change file</span>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="loader-ring">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle class="lr-track" cx="30" cy="30" r="24"/>
+        <circle class="lr-fill"  cx="30" cy="30" r="24" stroke="url(#loaderGrad)"/>
+      </svg>
+    </div>
+    <div class="loading-title">Analyzing Resume…</div>
+    <div class="loading-sub" id="loading-text">Scanning keywords...</div>
+    <div class="loading-dots">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-section">
+
+    <div class="section-label">Overall Scores</div>
+    <div class="scores-strip" id="scores-row"></div>
+
+    <div class="section-label">Detailed Analysis</div>
+    <div class="results-grid" id="results-grid"></div>
+
+    <div class="actions-row">
+      <button class="btn btn-primary" onclick="resetAll()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        Analyze Another Resume
+      </button>
+      <button class="btn btn-ghost" onclick="window.print()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print Report
+      </button>
+    </div>
+
+  </div>
+</main>
+
+<script>
+/* ============================================================
+   KEYWORD BANK
+============================================================ */
+const KEYWORD_BANK = {
+  techSkills: [
+    "python","sql","excel","power bi","tableau","java","javascript",
+    "html","css","c++","r","machine learning","deep learning",
+    "data analysis","data science","statistics","numpy","pandas",
+    "matplotlib","seaborn","tensorflow","keras","scikit-learn",
+    "mysql","postgresql","mongodb","aws","azure","google cloud",
+    "git","github","linux","bash","docker","spark","hadoop",
+    "vlookup","pivot table","macro","vba","power query","google sheets"
+  ],
+  softSkills: [
+    "communication","teamwork","leadership","problem solving",
+    "analytical","critical thinking","time management","adaptable",
+    "collaboration","detail-oriented","organized","self-motivated",
+    "multitasking","presentation","interpersonal"
+  ],
+  actionVerbs: [
+    "achieved","built","created","designed","developed","improved",
+    "increased","managed","optimized","reduced","led","implemented",
+    "analyzed","automated","delivered","generated","launched",
+    "maintained","resolved","streamlined","trained","transformed"
+  ],
+  sections: [
+    "summary","objective","education","experience","skills",
+    "projects","certifications","achievements","internship",
+    "languages","awards","volunteer","publications"
+  ]
+};
+
+const ATS_MUST_HAVE = [
+  "sql","excel","python","data analysis","communication",
+  "teamwork","project","education","skills","experience"
+];
+
+const POSITIVE_SIGNALS = [
+  { pattern:/\b\d+\s*%/i,                   label:"Uses percentages to quantify impact" },
+  { pattern:/\b\d+\+?\s*(years?|yrs?)/i,    label:"Mentions years of experience" },
+  { pattern:/\b(certificate|certified|certification)/i, label:"Has certifications" },
+  { pattern:/\b(internship|intern)\b/i,      label:"Internship experience included" },
+  { pattern:/\b(project|projects)\b/i,       label:"Projects section present" },
+  { pattern:/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i, label:"Email address found" },
+  { pattern:/(\+?\d[\d\s\-()]{7,})/,        label:"Phone number present" },
+  { pattern:/linkedin\.com/i,                label:"LinkedIn profile included" },
+  { pattern:/github\.com/i,                  label:"GitHub profile included" },
+  { pattern:/\b(cgpa|gpa|grade|score)\b/i,  label:"Academic score mentioned" },
+  { pattern:/\b\d{3,}\s*(rows?|records?|entries|clients?|users?)/i, label:"Quantified data scale" }
+];
+
+const RED_FLAGS = [
+  { pattern:/objective\s*:/i,               label:"Uses outdated 'Objective' instead of 'Summary'" },
+  { pattern:/\b(dear|to whom|hiring manager)\b/i, label:"Cover letter content mixed in resume" },
+  { pattern:/\b(hobbies|interests)\b/i,     label:"'Hobbies' section rarely adds value in ATS" },
+  { pattern:/\b(references available)\b/i,  label:"'References available on request' wastes space" },
+  { pattern:/(.)\1{4,}/,                    label:"Repeated characters detected (formatting issue)" }
+];
+
+/* ============================================================
+   UTILITY
+============================================================ */
+function clamp(val, min, max) { return Math.min(max, Math.max(min, val)); }
+
+/* ============================================================
+   CORE ANALYSIS
+============================================================ */
+function runAnalysis(text) {
+  const lower     = text.toLowerCase();
+  const wordCount = lower.split(/\s+/).length;
+
+  const foundTech     = KEYWORD_BANK.techSkills.filter(k => lower.includes(k));
+  const foundSoft     = KEYWORD_BANK.softSkills.filter(k => lower.includes(k));
+  const foundVerbs    = KEYWORD_BANK.actionVerbs.filter(k => lower.includes(k));
+  const foundSections = KEYWORD_BANK.sections.filter(k => lower.includes(k));
+  const missingTech   = KEYWORD_BANK.techSkills.filter(k => !lower.includes(k));
+  const positiveHits  = POSITIVE_SIGNALS.filter(s => s.pattern.test(text));
+  const redFlagHits   = RED_FLAGS.filter(s => s.pattern.test(text));
+  const atsFound      = ATS_MUST_HAVE.filter(k => lower.includes(k));
+  const atsMissing    = ATS_MUST_HAVE.filter(k => !lower.includes(k));
+
+  const techScore    = Math.min(30, foundTech.length * 1.5);
+  const softScore    = Math.min(10, foundSoft.length * 2);
+  const verbScore    = Math.min(10, foundVerbs.length * 1.5);
+  const sectionScore = Math.min(15, foundSections.length * 2.5);
+  const signalScore  = Math.min(20, positiveHits.length * 3);
+  let   lengthScore  = 0;
+  if      (wordCount >= 300 && wordCount <= 700) lengthScore = 10;
+  else if (wordCount >= 200)                      lengthScore = 6;
+  else if (wordCount > 700 && wordCount <= 1000)  lengthScore = 7;
+  else if (wordCount >= 100)                      lengthScore = 3;
+  const penalty = redFlagHits.length * 3;
+
+  let resumeScore = Math.round(5 + techScore + softScore + verbScore + sectionScore + signalScore + lengthScore - penalty);
+  resumeScore = clamp(resumeScore, 10, 98);
+
+  let atsScore = 0;
+  atsScore += Math.round((atsFound.length / ATS_MUST_HAVE.length) * 40);
+  atsScore += Math.min(20, foundSections.length * 3);
+  atsScore += redFlagHits.length === 0 ? 15 : Math.max(0, 15 - redFlagHits.length * 5);
+  atsScore += wordCount >= 250 ? 15 : Math.round((wordCount / 250) * 15);
+  atsScore += lower.includes("@") ? 10 : 0;
+  atsScore = clamp(atsScore, 10, 98);
+
+  // Strengths
+  const strengths = [];
+  if (foundTech.length >= 5)
+    strengths.push(`Strong technical profile — ${foundTech.length} tech keywords found (${foundTech.slice(0,4).join(", ")} + more)`);
+  else if (foundTech.length >= 2)
+    strengths.push(`Technical skills present: ${foundTech.join(", ")}`);
+  if (foundVerbs.length >= 4)
+    strengths.push(`Strong action verbs — "${foundVerbs.slice(0,3).join('", "')}" and ${foundVerbs.length - 3} more`);
+  else if (foundVerbs.length >= 2)
+    strengths.push(`Action verbs used: ${foundVerbs.join(", ")}`);
+  if (foundSoft.length >= 3)
+    strengths.push(`Soft skills present: ${foundSoft.slice(0,4).join(", ")}`);
+  positiveHits.forEach(s => strengths.push(s.label));
+  if (foundSections.length >= 5)
+    strengths.push(`Well-structured resume with ${foundSections.length} clear sections`);
+  if (strengths.length === 0) strengths.push("Resume submitted and parsed successfully");
+
+  // Weaknesses
+  const weaknesses = [];
+  if (foundTech.length < 4)
+    weaknesses.push(`Only ${foundTech.length} tech keywords found — below ATS threshold for data/IT roles`);
+  if (foundVerbs.length < 3)
+    weaknesses.push("Too few action verbs — use 'built', 'improved', 'analyzed' to show impact");
+  if (!lower.includes("summary") && !lower.includes("objective"))
+    weaknesses.push("No Summary section — recruiters expect a 2–3 line profile at the top");
+  if (wordCount < 250)
+    weaknesses.push(`Resume too short (${wordCount} words) — aim for 300–600 words for entry-level`);
+  if (wordCount > 900)
+    weaknesses.push(`Resume too long (${wordCount} words) — keep under 700 words for freshers`);
+  if (!/\b\d+\s*%/.test(text))
+    weaknesses.push("No quantified results — add metrics like '20% improvement' or '500+ records'");
+  if (!lower.includes("project"))
+    weaknesses.push("No Projects section — critical for freshers with limited work experience");
+  redFlagHits.forEach(f => weaknesses.push("⚠️ " + f.label));
+  if (weaknesses.length === 0) weaknesses.push("No major weaknesses detected");
+
+  // Suggestions
+  const suggestions = [];
+  if (!lower.includes("summary"))
+    suggestions.push("Add a Professional Summary at the top — 2–3 lines on your role, skills and goal");
+  if (foundVerbs.length < 4)
+    suggestions.push("Begin every bullet with an action verb: 'Analyzed', 'Built', 'Improved', 'Automated'");
+  if (!/\b\d+\s*%/.test(text))
+    suggestions.push("Quantify impact — 'Reduced report time by 30%' or 'Managed 500+ client records'");
+  if (!lower.includes("linkedin"))
+    suggestions.push("Add your LinkedIn URL in the contact section — recruiters verify it");
+  if (!lower.includes("github") && (lower.includes("python") || lower.includes("project")))
+    suggestions.push("Add GitHub link — important for showcasing Python or coding projects");
+  if (!lower.includes("certification") && !lower.includes("certificate"))
+    suggestions.push("Add certifications: Google Data Analytics (Coursera), SQL (HackerRank), Excel (Microsoft Learn)");
+  if (atsMissing.length > 0)
+    suggestions.push(`Naturally include these ATS keywords: ${atsMissing.slice(0,5).join(", ")}`);
+  if (foundSections.length < 5)
+    suggestions.push("Add standard sections: Summary, Education, Skills, Projects, Internship/Experience");
+  suggestions.push("Always export and send your resume as PDF to preserve formatting");
+
+  let overallFeedback = "";
+  if      (resumeScore >= 75) overallFeedback = "Strong resume! Minor improvements can make it stand out even more.";
+  else if (resumeScore >= 55) overallFeedback = "Solid foundation — address the gaps below to clear ATS filters confidently.";
+  else if (resumeScore >= 35) overallFeedback = "Needs improvement — focus on keywords, quantified results, and structure.";
+  else                         overallFeedback = "Resume needs significant work — expand skills, projects, and use standard headings.";
+
+  return {
+    resumeScore,
+    atsScore,
+    strengths:       strengths.slice(0, 5),
+    weaknesses:      weaknesses.slice(0, 5),
+    suggestions:     suggestions.slice(0, 6),
+    presentKeywords: [...foundTech, ...foundSoft].slice(0, 10),
+    missingKeywords: missingTech.slice(0, 10),
+    overallFeedback,
+    wordCount,
+    foundSections: foundSections.length
+  };
+}
+
+/* ============================================================
+   GLOBAL STATE
+============================================================ */
+let resumeText = "";
+
+const sampleResume = `John Doe
+Email: johndoe@email.com | Phone: +91-9876543210 | LinkedIn: linkedin.com/in/johndoe
+Location: Mumbai, India
+
+SUMMARY
+Recent B.Sc. Computer Science graduate with strong interest in data analysis and software development. Proficient in Python, Excel, and basic SQL. Looking for entry-level data analyst roles.
+
+EDUCATION
+B.Sc. Computer Science — Mumbai University (2021–2024) — CGPA: 7.8/10
+
+SKILLS
+Programming: Python, SQL (basic)
+Tools: Microsoft Excel, Power BI (beginner), Google Sheets
+Other: Data Cleaning, Pivot Tables, VLOOKUP, Basic Statistics
+
+PROJECTS
+Sales Dashboard (Excel)
+- Built an interactive dashboard using Superstore dataset (10,000+ rows)
+- Used Pivot Tables, slicers, and charts to visualize monthly sales trends
+- Identified top 5 products contributing to 60% of revenue
+
+Student Result Analyzer (Python)
+- Created a Python script to calculate grades and generate a summary report
+- Used pandas for data manipulation and matplotlib for bar charts
+
+INTERNSHIP
+Data Entry Intern — ABC Solutions Pvt Ltd (June 2023 – August 2023)
+- Maintained Excel records for 500+ clients
+- Assisted in monthly MIS report generation
+
+CERTIFICATIONS
+- Google Data Analytics Certificate (Coursera) — 2023
+- Excel for Beginners — Udemy — 2022
+
+LANGUAGES
+English (Intermediate), Tamil (Native), Hindi (Basic)`;
+
+/* ============================================================
+   UPLOAD / FILE HANDLERS
+============================================================ */
+function loadSampleResume() {
+  resumeText = sampleResume;
+  showPreview("Sample Resume (Demo)", resumeText);
+}
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.name.endsWith(".txt")) { alert("Please upload a .txt file."); return; }
+  const reader = new FileReader();
+  reader.onload = e => { resumeText = e.target.result; showPreview(file.name, resumeText); };
+  reader.readAsText(file);
+}
+
+function showPreview(name, text) {
+  const wc = text.trim().split(/\s+/).length;
+  document.getElementById("file-name-label").textContent = name;
+  document.getElementById("word-count-label").textContent = wc + " words";
+  document.getElementById("resume-preview-text").textContent = text;
+  document.getElementById("preview-section").style.display = "block";
+  document.getElementById("analyze-section").style.display = "block";
+}
+
+/* Drag and drop */
+const uploadArea = document.getElementById("upload-area");
+uploadArea.addEventListener("dragover",  e => { e.preventDefault(); uploadArea.classList.add("dragover"); });
+uploadArea.addEventListener("dragleave", ()=> { uploadArea.classList.remove("dragover"); });
+uploadArea.addEventListener("drop", e => {
+  e.preventDefault(); uploadArea.classList.remove("dragover");
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith(".txt")) handleFileUpload({ target: { files: [file] } });
+  else alert("Please drop a .txt file.");
+});
+
+/* ============================================================
+   ANALYZE RESUME
+============================================================ */
+async function analyzeResume() {
+  if (!resumeText.trim()) { alert("No resume text found."); return; }
+
+  document.getElementById("analyze-section").style.display = "none";
+  document.getElementById("preview-section").style.display = "none";
+  document.getElementById("loading").style.display = "block";
+
+  const msgs = ["Scanning keywords...","Checking ATS compatibility...","Evaluating structure...","Building your report..."];
+  let mi = 0;
+  const iv = setInterval(() => {
+    mi = (mi + 1) % msgs.length;
+    document.getElementById("loading-text").textContent = msgs[mi];
+  }, 700);
+
+  await new Promise(r => setTimeout(r, 1400));
+
+  const result = runAnalysis(resumeText);
+
+  clearInterval(iv);
+  document.getElementById("loading").style.display = "none";
+  renderResults(result);
+}
+
+/* ============================================================
+   RENDER RESULTS
+============================================================ */
+function renderResults(r) {
+  document.getElementById("upload-area").style.display = "none";
+  document.getElementById("results-section").style.display = "block";
+  renderScores(r);
+  renderGrid(r);
+  setTimeout(() => animateScores(r), 120);
+  document.getElementById("results-section").scrollIntoView({ behavior: "smooth" });
+}
+
+function scoreColor(v) {
+  return v >= 75 ? "#22d3a0" : v >= 50 ? "#fbbf24" : "#f43f5e";
+}
+
+function scoreGrade(v) {
+  if (v >= 80) return "Excellent";
+  if (v >= 65) return "Good";
+  if (v >= 50) return "Fair";
+  if (v >= 35) return "Needs Work";
+  return "Poor";
+}
+
+function verdictEmoji(v) {
+  if (v >= 75) return "🏆";
+  if (v >= 55) return "✅";
+  if (v >= 35) return "⚠️";
+  return "🔴";
+}
+
+function renderScores(r) {
+  const circ = 2 * Math.PI * 44; // r=44 on 110x110 svg
+
+  const makeRing = (id, label, val, cls) => {
+    const col = scoreColor(val);
+    const grade = scoreGrade(val);
+    return `
+    <div class="score-card ${cls}">
+      <div class="score-ring-wrap">
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <circle class="ring-bg"   cx="55" cy="55" r="44"/>
+          <circle class="ring-fill" id="${id}" cx="55" cy="55" r="44"
+            stroke="${col}"
+            stroke-dasharray="${circ}"
+            stroke-dashoffset="${circ}"/>
+        </svg>
+        <div class="ring-num" style="color:${col}">${val}</div>
+        <div class="ring-grade" style="color:${col}">${grade}</div>
+      </div>
+      <div class="score-name">${label}</div>
+    </div>`;
+  };
+
+  const bars = [
+    { label: "Keywords",   pct: Math.round((r.presentKeywords.length / 10) * 100), col: "#6366f1" },
+    { label: "Structure",  pct: Math.round((r.foundSections / 8) * 100), col: "#2dd4bf" },
+    { label: "Word Count", pct: Math.min(100, Math.round((r.wordCount / 600) * 100)), col: "#a78bfa" },
+  ];
+
+  const barsHtml = bars.map(b => `
+    <div class="vbar-row">
+      <div class="vbar-label">${b.label}</div>
+      <div class="vbar-track"><div class="vbar-fill" data-pct="${b.pct}" style="background:${b.col}"></div></div>
+      <div class="vbar-pct" style="color:${b.col}">${b.pct}%</div>
+    </div>`).join("");
+
+  const verdictCard = `
+    <div class="score-card s-verdict">
+      <div class="verdict-icon">${verdictEmoji(r.resumeScore)}</div>
+      <div class="verdict-text">${r.overallFeedback}</div>
+      <div class="verdict-bars">${barsHtml}</div>
+    </div>`;
+
+  document.getElementById("scores-row").innerHTML =
+    makeRing("ring-resume", "Resume Score", r.resumeScore, "s-resume") +
+    makeRing("ring-ats",    "ATS Score",    r.atsScore,    "s-ats") +
+    verdictCard;
+}
+
+function animateScores(r) {
+  const circ = 2 * Math.PI * 44;
+  [["ring-resume", r.resumeScore], ["ring-ats", r.atsScore]].forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.strokeDashoffset = circ - (val / 100) * circ;
+  });
+  // animate progress bars
+  document.querySelectorAll(".vbar-fill[data-pct]").forEach(el => {
+    el.style.width = el.dataset.pct + "%";
+  });
+}
+
+function renderGrid(r) {
+  document.getElementById("results-grid").innerHTML =
+    resultCard("✅", "ci-green",  "Strengths",  "What's working well on your resume",  r.strengths,  "li-green",  "") +
+    resultCard("❌", "ci-red",    "Weaknesses", "Areas that need attention",            r.weaknesses, "li-red",    "") +
+    resultCard("💡", "ci-purple", "Improvement Suggestions", "Actionable steps to improve your score", r.suggestions, "li-purple", "span-2") +
+    keywordsCard("✅", "ci-green",  "Keywords Found",   "Detected ATS-relevant keywords", r.presentKeywords, "kb-green") +
+    keywordsCard("🚫", "ci-red",    "Missing Keywords",  "Add these to improve ATS score",  r.missingKeywords, "kb-red");
+}
+
+function resultCard(ico, iconCls, title, sub, items, liCls, extraClass) {
+  const lis = (items || []).map(item =>
+    `<li><div class="li-icon ${liCls}">${ico}</div><span>${item}</span></li>`
+  ).join("");
+  return `
+  <div class="result-card ${extraClass}">
+    <div class="card-header">
+      <div class="card-icon ${iconCls}">${ico}</div>
+      <div class="card-header-text"><h3>${title}</h3><p>${sub}</p></div>
+    </div>
+    <ul class="r-list">${lis}</ul>
+  </div>`;
+}
+
+function keywordsCard(ico, iconCls, title, sub, words, badgeCls) {
+  const badges = (words || []).map(w => `<span class="kbadge ${badgeCls}">${w}</span>`).join("");
+  return `
+  <div class="result-card">
+    <div class="card-header">
+      <div class="card-icon ${iconCls}">${ico}</div>
+      <div class="card-header-text"><h3>${title}</h3><p>${sub}</p></div>
+    </div>
+    <div class="badge-grid">${badges}</div>
+  </div>`;
+}
+
+/* ============================================================
+   RESET
+============================================================ */
+function resetAll() {
+  resumeText = "";
+  ["preview-section","analyze-section","loading","results-section"].forEach(id =>
+    document.getElementById(id).style.display = "none"
+  );
+  document.getElementById("upload-area").style.display = "block";
+  document.getElementById("scores-row").innerHTML = "";
+  document.getElementById("results-grid").innerHTML = "";
+  document.getElementById("file-input").value = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>
+</body>
+</html>
